@@ -45,7 +45,7 @@ object UuidGenerator {
         val bytes = hash.copyOf(16)
         bytes[6] = (bytes[6].toInt() and 0x0F or 0x50).toByte()
         bytes[8] = (bytes[8].toInt() and 0x3F or 0x80).toByte()
-        return UUID.fromByteArray(bytes)
+        return uuidFromByteArray(bytes)
     }
 
     fun uuidV7(nowMillis: Long): UUID {
@@ -65,7 +65,7 @@ object UuidGenerator {
         for (i in 0 until 6) {
             bytes[10 + i] = randomBytes[4 + i]
         }
-        return UUID.fromByteArray(bytes)
+        return uuidFromByteArray(bytes)
     }
 }
 
@@ -82,7 +82,7 @@ private fun UUID.toBytes(): ByteArray {
     return buffer
 }
 
-private fun UUID.Companion.fromByteArray(bytes: ByteArray): UUID {
+private fun uuidFromByteArray(bytes: ByteArray): UUID {
     require(bytes.size == 16)
     var msb = 0L
     var lsb = 0L
