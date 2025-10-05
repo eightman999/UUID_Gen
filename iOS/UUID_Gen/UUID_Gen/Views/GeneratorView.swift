@@ -140,6 +140,13 @@ struct GeneratorView: View {
         }
         .alert("生成したUUID", isPresented: $showResultAlert, actions: {
             Button("コピー") { copyResult() }
+            Button("保存") {
+                Task { @MainActor in
+                    await saveCurrent()
+                    showResultAlert = false
+                }
+            }
+            .disabled(!store.limitState.canAdd(currentCount: store.items.count))
             Button("閉じる", role: .cancel) { }
         }, message: {
             Text(formattedValue)
@@ -192,6 +199,10 @@ struct GeneratorView: View {
 
     private func saveCurrent() async {
         guard let generated else { return }
+        guard store.limitState.canAdd(currentCount: store.items.count) else {
+            errorMessage = "保存上限に達しました。"
+            return
+        }
         do {
             try await store.save(generated: generated, label: label.isEmpty ? nil : label, formatOptions: formatOptions)
         } catch {
