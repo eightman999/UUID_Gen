@@ -123,6 +123,17 @@ fun MainScreen(
             AlertDialog(
                 onDismissRequest = onDismissGeneratedDialog,
                 confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onSave()
+                            onDismissGeneratedDialog()
+                        },
+                        enabled = uiState.canSave,
+                    ) {
+                        Text("保存")
+                    }
+                },
+                dismissButton = {
                     TextButton(onClick = onDismissGeneratedDialog) {
                         Text("閉じる")
                     }
