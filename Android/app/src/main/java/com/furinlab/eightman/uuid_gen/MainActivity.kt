@@ -33,6 +33,8 @@ class MainActivity : ComponentActivity() {
                     onDelete = viewModel::deleteItem,
                     onTogglePro = viewModel::togglePro,
                     onGrantBonus = viewModel::grantBonusSlot,
+                    onDismissGeneratedDialog = viewModel::dismissGeneratedDialog,
+                    onDismissError = viewModel::dismissError,
                 )
             }
         }

@@ -38,6 +38,7 @@ class MainViewModel @Inject constructor(
     private val formatOptions = MutableStateFlow(UuidFormatOptions())
     private val generatedValue = MutableStateFlow<String?>(null)
     private val errorMessage = MutableStateFlow<String?>(null)
+    private val showGeneratedDialog = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
@@ -68,7 +69,8 @@ class MainViewModel @Inject constructor(
         repository.itemCount,
         repository.bonusSlots,
         repository.entitlement,
-    ) { version, namespace, name, format, generated, error, items, count, bonusSlots, entitlement ->
+        showGeneratedDialog,
+    ) { version, namespace, name, format, generated, error, items, count, bonusSlots, entitlement, shouldShowDialog ->
         val now = System.currentTimeMillis()
         val activeBonus = bonusSlots.count { !it.isExpired(now) }
         val limitedBonus = activeBonus.coerceAtMost(MAX_BONUS)
@@ -83,6 +85,7 @@ class MainViewModel @Inject constructor(
             nameInput = name,
             formatOptions = format,
             generatedValue = generated,
+            showGeneratedDialog = shouldShowDialog && generated != null,
             history = items,
             limitState = limitState,
             canSave = limitState.canAdd(count),
@@ -134,14 +137,17 @@ class MainViewModel @Inject constructor(
                 UuidVersion.V7 -> UuidGenerator.generate(version)
             }
             generatedValue.value = options.apply(uuid.toString())
+            showGeneratedDialog.value = true
         } catch (t: Throwable) {
             errorMessage.value = t.message
+            showGeneratedDialog.value = false
         }
     }
 
     fun clearGenerated() {
         generatedValue.value = null
         errorMessage.value = null
+        showGeneratedDialog.value = false
     }
 
     fun saveGenerated() {
@@ -154,6 +160,10 @@ class MainViewModel @Inject constructor(
             }
             val id = UUID.randomUUID().toString()
             val rawUuid = extractRawValue(value)
+            if (repository.existsByValue(rawUuid)) {
+                errorMessage.value = "このUUIDは既に保存されています"
+                return@launch
+            }
             val item = UuidItem(
                 id = id,
                 value = rawUuid,
@@ -164,7 +174,16 @@ class MainViewModel @Inject constructor(
                 format = formatOptions.value,
             )
             repository.save(item)
+            errorMessage.value = null
         }
+    }
+
+    fun dismissGeneratedDialog() {
+        showGeneratedDialog.value = false
+    }
+
+    fun dismissError() {
+        errorMessage.value = null
     }
 
     fun deleteItem(id: String) {

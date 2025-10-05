@@ -21,6 +21,9 @@ interface UuidItemDao {
     @Query("DELETE FROM uuid_items WHERE id = :id")
     suspend fun deleteById(id: String)
 
+    @Query("SELECT EXISTS(SELECT 1 FROM uuid_items WHERE value = :value LIMIT 1)")
+    suspend fun existsByValue(value: String): Boolean
+
     @Query("DELETE FROM uuid_items")
     suspend fun clear()
 }

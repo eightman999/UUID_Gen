@@ -11,6 +11,7 @@ data class MainUiState(
     val nameInput: String = "",
     val formatOptions: UuidFormatOptions = UuidFormatOptions(),
     val generatedValue: String? = null,
+    val showGeneratedDialog: Boolean = false,
     val history: List<UuidItem> = emptyList(),
     val limitState: LimitState = LimitState(isPro = false, baseLimit = 10, bonusActive = 0),
     val canSave: Boolean = true,
