@@ -41,6 +41,10 @@ class DefaultUuidRepository @Inject constructor(
         uuidItemDao.insert(item.toEntity())
     }
 
+    override suspend fun existsByValue(value: String): Boolean {
+        return uuidItemDao.existsByValue(value)
+    }
+
     override suspend fun delete(id: String) {
         uuidItemDao.deleteById(id)
     }

@@ -20,114 +20,131 @@ struct GeneratorView: View {
     @State private var formattedValue: String = ""
     @State private var isGenerating: Bool = false
     @State private var errorMessage: String?
+    @State private var showResultAlert: Bool = false
 
     var body: some View {
-        Form {
-            Section("バージョン") {
-                Picker("UUID バージョン", selection: $selectedVersion) {
-                    ForEach(UUIDVersion.allCases) { version in
-                        VStack(alignment: .leading) {
-                            Text(version.title)
-                            Text(version.description)
+        ZStack(alignment: .bottomTrailing) {
+            Form {
+                Section("バージョン") {
+                    Picker("UUID バージョン", selection: $selectedVersion) {
+                        ForEach(UUIDVersion.allCases) { version in
+                            VStack(alignment: .leading) {
+                                Text(version.title)
+                                Text(version.description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .tag(version)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                }
+
+                if selectedVersion == .v5 {
+                    Section("名前空間 v5") {
+                        TextField("Namespace UUID", text: $namespace)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        TextField("Name", text: $name)
+                            .autocorrectionDisabled()
+                    }
+                }
+
+                Section("整形オプション") {
+                    Toggle("ハイフンを含める", isOn: Binding(
+                        get: { formatOptions.contains(.hyphen) },
+                        set: { updateOption($0, option: .hyphen) }
+                    ))
+                    Toggle("大文字にする", isOn: Binding(
+                        get: { formatOptions.contains(.uppercase) },
+                        set: { updateOption($0, option: .uppercase) }
+                    ))
+                    Toggle("{} を付与", isOn: Binding(
+                        get: { formatOptions.contains(.braces) },
+                        set: { updateOption($0, option: .braces) }
+                    ))
+                }
+
+                Section("ラベル (任意)") {
+                    TextField("メモ", text: $label)
+                }
+
+                if let generated {
+                    Section("結果") {
+                        Text(formattedValue)
+                            .font(.system(.title3, design: .monospaced))
+                            .textSelection(.enabled)
+                            .contextMenu {
+                                Button("コピー") { copyResult() }
+                            }
+                        resultInfoView(generated: generated)
+                        HStack {
+                            Button {
+                                copyResult()
+                            } label: {
+                                Label("コピー", systemImage: "doc.on.doc")
+                            }
+                            Spacer()
+                            ShareLink(item: formattedValue, preview: SharePreview("UUID", image: Image(systemName: "square.on.square"))) {
+                                Label("共有", systemImage: "square.and.arrow.up")
+                            }
+                        }
+                        Button {
+                            Task { await saveCurrent() }
+                        } label: {
+                            Label("保存", systemImage: "tray.and.arrow.down")
+                        }
+                        .disabled(!store.limitState.canAdd(currentCount: store.items.count))
+                    }
+                }
+
+                Section("保存可能数") {
+                    if store.entitlement.isPro {
+                        Text("保存上限: 無制限")
+                    } else {
+                        Text("保存数: \(store.items.count) / \(store.limitState.capacity)")
+                        if store.bonusSlots.count > 0 {
+                            Text("ボーナス枠: \(store.bonusSlots.count) / \(LimitConstants.maxBonus)")
+                        }
+                    }
+                    if !store.bonusSlots.isEmpty {
+                        ForEach(store.bonusSlots) { slot in
+                            Text("ボーナス枠 有効期限: \(slot.expiresAt.formatted(date: .omitted, time: .shortened))")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        .tag(version)
-                    }
-                }
-                .pickerStyle(.inline)
-            }
-
-            if selectedVersion == .v5 {
-                Section("名前空間 v5") {
-                    TextField("Namespace UUID", text: $namespace)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    TextField("Name", text: $name)
-                        .autocorrectionDisabled()
-                }
-            }
-
-            Section("整形オプション") {
-                Toggle("ハイフンを含める", isOn: Binding(
-                    get: { formatOptions.contains(.hyphen) },
-                    set: { updateOption($0, option: .hyphen) }
-                ))
-                Toggle("大文字にする", isOn: Binding(
-                    get: { formatOptions.contains(.uppercase) },
-                    set: { updateOption($0, option: .uppercase) }
-                ))
-                Toggle("{} を付与", isOn: Binding(
-                    get: { formatOptions.contains(.braces) },
-                    set: { updateOption($0, option: .braces) }
-                ))
-            }
-
-            Section("ラベル (任意)") {
-                TextField("メモ", text: $label)
-            }
-
-            Section {
-                Button {
-                    Task { await generate() }
-                } label: {
-                    Label("UUIDを生成", systemImage: "sparkles")
-                }
-                .disabled(isGenerating)
-            }
-
-            if let generated {
-                Section("結果") {
-                    Text(formattedValue)
-                        .font(.system(.title3, design: .monospaced))
-                        .textSelection(.enabled)
-                        .contextMenu {
-                            Button("コピー") { copyResult() }
-                        }
-                    resultInfoView(generated: generated)
-                    HStack {
-                        Button {
-                            copyResult()
-                        } label: {
-                            Label("コピー", systemImage: "doc.on.doc")
-                        }
-                        Spacer()
-                        ShareLink(item: formattedValue, preview: SharePreview("UUID", image: Image(systemName: "square.on.square"))) {
-                            Label("共有", systemImage: "square.and.arrow.up")
-                        }
-                    }
-                    Button {
-                        Task { await saveCurrent() }
-                    } label: {
-                        Label("保存", systemImage: "tray.and.arrow.down")
-                    }
-                    .disabled(!store.limitState.canAdd(currentCount: store.items.count))
-                }
-            }
-
-            Section("保存可能数") {
-                if store.entitlement.isPro {
-                    Text("保存上限: 無制限")
-                } else {
-                    Text("保存数: \(store.items.count) / \(store.limitState.capacity)")
-                    if store.bonusSlots.count > 0 {
-                        Text("ボーナス枠: \(store.bonusSlots.count) / \(LimitConstants.maxBonus)")
-                    }
-                }
-                if !store.bonusSlots.isEmpty {
-                    ForEach(store.bonusSlots) { slot in
-                        Text("ボーナス枠 有効期限: \(slot.expiresAt.formatted(date: .omitted, time: .shortened))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
             }
+            .padding(.bottom, 96)
+
+            Button {
+                Task { await generate() }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 22, weight: .bold))
+                    .padding(20)
+                    .foregroundStyle(.white)
+                    .background(Circle().fill(Color.accentColor))
+            }
+            .accessibilityLabel("UUIDを生成")
+            .disabled(isGenerating)
+            .opacity(isGenerating ? 0.6 : 1.0)
+            .padding(.trailing, 24)
+            .padding(.bottom, 24)
+            .shadow(radius: 4, x: 0, y: 2)
         }
         .navigationTitle("UUID 生成")
         .task {
             selectedVersion = UUIDVersion(rawValue: defaultVersionRaw) ?? .v7
         }
-        .alert("エラー", isPresented: Binding(
+        .alert("生成したUUID", isPresented: $showResultAlert, actions: {
+            Button("コピー") { copyResult() }
+            Button("閉じる", role: .cancel) { }
+        }, message: {
+            Text(formattedValue)
+        })
+        .alert("警告", isPresented: Binding(
             get: { errorMessage != nil },
             set: { _ in errorMessage = nil }
         ), actions: {
@@ -163,6 +180,7 @@ struct GeneratorView: View {
             generated = result
             formattedValue = format(uuid: result.value, options: formatOptions)
             defaultVersionRaw = selectedVersion.rawValue
+            showResultAlert = true
         } catch UUIDGenerationError.invalidNamespace {
             errorMessage = "名前空間 UUID が不正です"
         } catch UUIDGenerationError.invalidName {

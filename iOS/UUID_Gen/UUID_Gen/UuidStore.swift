@@ -76,6 +76,12 @@ final class UuidStore: ObservableObject {
     func save(generated: GeneratedUuid, label: String?, formatOptions: UuidFormatOptions) async throws {
         let context = context
         try await context.perform {
+            let request: NSFetchRequest<UuidItemEntity> = UuidItemEntity.fetchRequest()
+            request.predicate = NSPredicate(format: "value == %@", generated.value.uuidString)
+            request.fetchLimit = 1
+            if let _ = try context.fetch(request).first {
+                throw NSError(domain: "UuidStore", code: 2, userInfo: [NSLocalizedDescriptionKey: "このUUIDは既に保存されています。"])
+            }
             let entity = UuidItemEntity(context: context)
             entity.id = generated.id
             entity.value = generated.value.uuidString

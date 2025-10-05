@@ -10,15 +10,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -30,6 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import com.furinlab.eightman.uuid_gen.domain.model.UuidFormatOptions
 import com.furinlab.eightman.uuid_gen.domain.model.UuidItem
 import com.furinlab.eightman.uuid_gen.domain.model.UuidVersion
@@ -53,55 +59,97 @@ fun MainScreen(
     onDelete: (String) -> Unit,
     onTogglePro: () -> Unit,
     onGrantBonus: () -> Unit,
+    onDismissGeneratedDialog: () -> Unit,
+    onDismissError: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = "UUID Generator",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = onGenerate) {
+                Icon(imageVector = Icons.Filled.Add, contentDescription = "生成")
+            }
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = "UUID Generator",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
 
-        VersionSelector(uiState.selectedVersion, onVersionSelected)
+            VersionSelector(uiState.selectedVersion, onVersionSelected)
 
-        if (uiState.selectedVersion == UuidVersion.V5) {
-            NamespaceInput(
-                namespace = uiState.namespaceInput,
-                name = uiState.nameInput,
-                onNamespaceChanged = onNamespaceChanged,
-                onNameChanged = onNameChanged,
+            if (uiState.selectedVersion == UuidVersion.V5) {
+                NamespaceInput(
+                    namespace = uiState.namespaceInput,
+                    name = uiState.nameInput,
+                    onNamespaceChanged = onNamespaceChanged,
+                    onNameChanged = onNameChanged,
+                )
+            }
+
+            FormatOptionsSection(uiState.formatOptions, onFormatChanged)
+
+            ActionButtons(
+                onSave = onSave,
+                onClear = onClear,
+                canSave = uiState.canSave && uiState.generatedValue != null,
+            )
+
+            GeneratedValueCard(uiState.generatedValue, uiState.errorMessage)
+
+            LimitStatusSection(uiState)
+
+            ControlRow(
+                onTogglePro = onTogglePro,
+                onGrantBonus = onGrantBonus,
+            )
+
+            Divider()
+
+            HistoryList(
+                modifier = Modifier.weight(1f),
+                items = uiState.history,
+                onDelete = onDelete,
             )
         }
 
-        FormatOptionsSection(uiState.formatOptions, onFormatChanged)
+        if (uiState.showGeneratedDialog && uiState.generatedValue != null) {
+            AlertDialog(
+                onDismissRequest = onDismissGeneratedDialog,
+                confirmButton = {
+                    TextButton(onClick = onDismissGeneratedDialog) {
+                        Text("閉じる")
+                    }
+                },
+                title = { Text("生成したUUID") },
+                text = {
+                    Text(
+                        text = uiState.generatedValue,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
+                },
+            )
+        }
 
-        ActionButtons(
-            onGenerate = onGenerate,
-            onSave = onSave,
-            onClear = onClear,
-            canSave = uiState.canSave && uiState.generatedValue != null,
-        )
-
-        GeneratedValueCard(uiState.generatedValue, uiState.errorMessage)
-
-        LimitStatusSection(uiState)
-
-        ControlRow(
-            onTogglePro = onTogglePro,
-            onGrantBonus = onGrantBonus,
-        )
-
-        Divider()
-
-        HistoryList(
-            modifier = Modifier.weight(1f),
-            items = uiState.history,
-            onDelete = onDelete,
-        )
+        if (uiState.errorMessage != null) {
+            AlertDialog(
+                onDismissRequest = onDismissError,
+                confirmButton = {
+                    TextButton(onClick = onDismissError) {
+                        Text("OK")
+                    }
+                },
+                title = { Text("警告") },
+                text = { Text(uiState.errorMessage) },
+            )
+        }
     }
 }
 
@@ -204,7 +252,6 @@ private fun FormatToggle(
 
 @Composable
 private fun ActionButtons(
-    onGenerate: () -> Unit,
     onSave: () -> Unit,
     onClear: () -> Unit,
     canSave: Boolean,
@@ -213,9 +260,6 @@ private fun ActionButtons(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Button(onClick = onGenerate) {
-            Text(text = "生成")
-        }
         Button(onClick = onSave, enabled = canSave) {
             Text(text = "保存")
         }

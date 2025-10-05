@@ -12,6 +12,7 @@ interface UuidRepository {
     val entitlement: Flow<Entitlement>
 
     suspend fun save(item: UuidItem)
+    suspend fun existsByValue(value: String): Boolean
     suspend fun delete(id: String)
     suspend fun addBonusSlot(slot: BonusSlot)
     suspend fun removeExpiredBonus(now: Long)
