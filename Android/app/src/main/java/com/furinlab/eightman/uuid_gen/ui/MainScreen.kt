@@ -1,5 +1,6 @@
 package com.furinlab.eightman.uuid_gen.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,7 +32,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
@@ -363,10 +367,13 @@ private fun HistoryItem(
     item: UuidItem,
     onDelete: (String) -> Unit,
 ) {
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    val formattedValue = remember(item.value, item.format) { item.format.apply(item.value) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = item.format.apply(item.value),
+                text = formattedValue,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -375,7 +382,18 @@ private fun HistoryItem(
                 text = "${item.version.displayName.uppercase()} ・ ${item.createdAt.formatAsDateTime()}",
                 style = MaterialTheme.typography.bodyMedium,
             )
-            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            ) {
+                TextButton(
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(formattedValue))
+                        Toast.makeText(context, "コピーしました", Toast.LENGTH_SHORT).show()
+                    },
+                ) {
+                    Text("コピー")
+                }
                 TextButton(onClick = { onDelete(item.id) }) {
                     Text("削除")
                 }
