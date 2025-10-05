@@ -5,6 +5,7 @@
 //  Created by eightman on 2025/10/05.
 //
 
+import CoreData
 import SwiftUI
 
 @main

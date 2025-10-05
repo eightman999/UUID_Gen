@@ -8,9 +8,11 @@ struct HistoryView: View {
         List {
             summarySection
             if store.items.isEmpty {
-                ContentUnavailableView("保存された UUID はありません", systemImage: "tray") {
-                    Text("生成画面から保存できます")
-                }
+                ContentUnavailableView(
+                    "保存された UUID はありません",
+                    systemImage: "tray",
+                    description: Text("生成画面から保存できます")
+                )
             } else {
                 ForEach(store.items) { item in
                     NavigationLink(value: item) {
