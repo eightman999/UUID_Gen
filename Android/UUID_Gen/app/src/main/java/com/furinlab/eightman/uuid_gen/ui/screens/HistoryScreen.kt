@@ -111,7 +111,7 @@ private fun SummaryCard(
     onClear: () -> Unit,
     onAddBonus: () -> Unit
 ) {
-    Card {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("保存状況", style = MaterialTheme.typography.titleMedium)
             if (storeState.entitlement.isPro) {
