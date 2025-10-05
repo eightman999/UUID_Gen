@@ -1,3 +1,4 @@
+import Combine
 import CoreData
 import Foundation
 import SwiftUI
@@ -14,6 +15,10 @@ struct UuidRecord: Identifiable, Hashable {
 
     var formattedValue: String {
         format(uuid: UUID(uuidString: rawValue) ?? UUID(), options: formatOptions)
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
@@ -172,8 +177,8 @@ final class UuidStore: ObservableObject {
             request.fetchLimit = 1
             let entity = (try? context.fetch(request).first) ?? EntitlementEntity(context: context)
             entity.id = "primary"
-            entity.isPro = entitlement.isPro
-            entity.proSince = entitlement.proSince
+            entity.isPro = self.entitlement.isPro
+            entity.proSince = self.entitlement.proSince
             entity.lastSyncAt = Date()
             try? context.save()
         }
