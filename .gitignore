@@ -1,0 +1,6 @@
+*.xcworkspacedata
+*.pbxproj
+/iOS/NovelReader
+.DS_Store
+/iOS
+.DS_Store
